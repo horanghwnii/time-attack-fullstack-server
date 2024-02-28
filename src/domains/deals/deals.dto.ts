@@ -4,3 +4,9 @@ export type CreateProductDto = {
   imgSrc: string;
   price: number;
 };
+
+export type UpdateProductDto = {
+  name: string;
+  description: string;
+  price: number;
+};

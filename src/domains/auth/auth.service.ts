@@ -18,6 +18,14 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
+  async getProfile(user: User) {
+    const profile = await this.prismaService.user.findUnique({
+      where: { id: user.id },
+    });
+
+    return profile;
+  }
+
   /**
    * /auth/sign-up
    */
@@ -37,7 +45,7 @@ export class AuthService {
     const user = await this.prismaService.user.create({ data });
     const accessToken = this.generatedAccessToken(user);
 
-    return { accessToken };
+    return accessToken;
   }
 
   /**
@@ -61,7 +69,7 @@ export class AuthService {
 
     const accessToken = this.generatedAccessToken(user);
 
-    return accessToken;
+    return { accessToken, user };
   }
 
   /**
