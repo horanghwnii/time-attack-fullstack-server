@@ -1,23 +1,42 @@
 import { Injectable } from '@nestjs/common';
+import { writeFile } from 'fs/promises';
+import { nanoid } from 'nanoid';
+import { join } from 'path';
 import { PrismaService } from 'src/db/prisma/prisma.service';
-import { CreateProductDto, UpdateProductDto } from './deals.dto';
+import { UpdateProductDto } from './deals.dto';
 
 @Injectable()
 export class DealsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createProduct(userId: string, dto: CreateProductDto) {
-    const { name, description, imgSrc, price } = dto;
+  async createProduct(userId: string, dto: any) {
+    const { name, description, image, price, address } = dto;
 
-    const product = await this.prismaService.product.create({
-      data: { name, description, imgSrc, price, userId },
+    // 어디에 저장할 건지 + 파일명 + 파일 확장자 -> 경로
+
+    const basePath = join(__dirname, '../../../public/images', nanoid());
+    const fileName = nanoid();
+    const fileExtension = image.originalName.split('.').slice(-1);
+    const path = join(basePath, `${fileName}.${fileExtension}`);
+
+    writeFile(path, dto.image.buffer);
+
+    const product = await this.prismaService.deal.create({
+      data: {
+        name,
+        description,
+        imgSrc: `/images/${fileName}`,
+        price,
+        userId,
+        address,
+      },
     });
 
     return product;
   }
 
   async findUniqueDeal(dealId: number) {
-    const deal = await this.prismaService.product.findUnique({
+    const deal = await this.prismaService.deal.findUnique({
       where: { id: dealId },
       select: {
         name: true,
@@ -27,6 +46,7 @@ export class DealsService {
         price: true,
         userId: true,
         user: { select: { email: true } },
+        address: true,
       },
     });
 
@@ -34,18 +54,18 @@ export class DealsService {
   }
 
   async updateDeal(dealId: number, dto: UpdateProductDto) {
-    const { name, description, price } = dto;
+    const { name, description, price, address } = dto;
 
-    const updatedDeal = await this.prismaService.product.update({
+    const updatedDeal = await this.prismaService.deal.update({
       where: { id: dealId },
-      data: { name, description, price },
+      data: { name, description, price, address },
     });
 
     return updatedDeal;
   }
 
   async deleteDeal(dealId: number) {
-    await this.prismaService.product.delete({ where: { id: dealId } });
+    await this.prismaService.deal.delete({ where: { id: dealId } });
 
     return dealId;
   }
