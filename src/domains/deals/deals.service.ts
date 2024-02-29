@@ -3,36 +3,58 @@ import { writeFile } from 'fs/promises';
 import { nanoid } from 'nanoid';
 import { join } from 'path';
 import { PrismaService } from 'src/db/prisma/prisma.service';
-import { UpdateProductDto } from './deals.dto';
 
 @Injectable()
 export class DealsService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createProduct(userId: string, dto: any) {
-    const { name, description, image, price, address } = dto;
+  async createDeal(userId: string, dto: any) {
+    const { name, description, imageSrc, price, address } = dto;
 
-    // 어디에 저장할 건지 + 파일명 + 파일 확장자 -> 경로
-
-    const basePath = join(__dirname, '../../../public/images', nanoid());
+    const basePath = join(__dirname, '../../../public/images');
     const fileName = nanoid();
-    const fileExtension = image.originalName.split('.').slice(-1);
+    const fileExtension = imageSrc.originalname.split('.').pop();
     const path = join(basePath, `${fileName}.${fileExtension}`);
 
-    writeFile(path, dto.image.buffer);
+    await writeFile(path, imageSrc.buffer);
 
-    const product = await this.prismaService.deal.create({
+    const deal = await this.prismaService.deal.create({
       data: {
         name,
         description,
-        imgSrc: `/images/${fileName}`,
+        imgSrc: `/images/${fileName}.${fileExtension}`,
         price,
         userId,
         address,
       },
     });
 
-    return product;
+    return deal;
+  }
+
+  async updateDeal(dealId: number, userId: string, dto: any) {
+    const { name, description, imageSrc, price, address } = dto;
+
+    const basePath = join(__dirname, '../../../public/images');
+    const fileName = nanoid();
+    const fileExtension = imageSrc.originalname.split('.').pop();
+    const path = join(basePath, `${fileName}.${fileExtension}`);
+
+    await writeFile(path, imageSrc.buffer);
+
+    const updatedDeal = await this.prismaService.deal.update({
+      where: { id: dealId },
+      data: {
+        name,
+        description,
+        imgSrc: `/images/${fileName}.${fileExtension}`,
+        price,
+        userId,
+        address,
+      },
+    });
+
+    return updatedDeal;
   }
 
   async findUniqueDeal(dealId: number) {
@@ -47,21 +69,16 @@ export class DealsService {
         userId: true,
         user: { select: { email: true } },
         address: true,
+        views: true,
       },
     });
 
-    return deal;
-  }
-
-  async updateDeal(dealId: number, dto: UpdateProductDto) {
-    const { name, description, price, address } = dto;
-
-    const updatedDeal = await this.prismaService.deal.update({
+    await this.prismaService.deal.update({
       where: { id: dealId },
-      data: { name, description, price, address },
+      data: { views: { increment: 1 } },
     });
 
-    return updatedDeal;
+    return deal;
   }
 
   async deleteDeal(dealId: number) {

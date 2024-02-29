@@ -6,7 +6,9 @@ export class AppService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async findAllDeals() {
-    const products = await this.prismaService.product.findMany();
+    const products = await this.prismaService.deal.findMany({
+      include: { user: true },
+    });
 
     return products;
   }

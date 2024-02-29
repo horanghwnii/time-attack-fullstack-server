@@ -28,19 +28,18 @@ export class AuthMiddleware implements NestMiddleware<Request, Response> {
     const accessToken = req.headers.authorization?.split('Bearer ')[1];
     if (!accessToken) return next();
 
-    let id;
-
+    let email: string;
     try {
       const secret = this.configService.getOrThrow('JWT_SECRET_KEY');
       const { sub } = verify(accessToken, secret);
-      id = sub as string;
+      email = String(sub);
     } catch (e) {
       throw new UnauthorizedException('Invalid accessToken');
     }
-
     const user = await this.prismaService.user.findUnique({
-      where: { id },
+      where: { email },
     });
+
     if (!user) throw new BadRequestException('Delete user');
     req.user = user;
 

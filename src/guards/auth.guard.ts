@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { User } from '@prisma/client';
 import { Request } from 'express';
 import { JwtPayload, verify } from 'jsonwebtoken';
 import { PrismaService } from 'src/db/prisma/prisma.service';
@@ -20,7 +19,7 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const userTypeInDecorator = this.reflector.getAllAndOverride<User>('user', [
+    const userTypeInDecorator = this.reflector.getAllAndOverride('user', [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -30,15 +29,16 @@ export class AuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
+
     const accessToken = this.extractTokenFromHeader(request);
     if (!accessToken) throw new UnauthorizedException();
 
     try {
       const secret = this.configService.getOrThrow<string>('JWT_SECRET_KEY');
-      const { sub: id } = verify(accessToken, secret) as JwtPayload;
+      const { sub: email } = verify(accessToken, secret) as JwtPayload;
 
       const user = await this.prismaService.user.findUniqueOrThrow({
-        where: { id },
+        where: { email },
       });
 
       request.user = user;

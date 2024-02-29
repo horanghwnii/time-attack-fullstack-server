@@ -69,20 +69,28 @@ export class AuthService {
 
     const accessToken = this.generatedAccessToken(user);
 
-    return { accessToken, user };
+    return accessToken;
   }
+
+  // refreshToken(user: User) {
+  //   const refreshedAccessToken = this.generatedAccessToken(user);
+  //   return refreshedAccessToken;
+  // }
 
   /**
    * AccessToken
    */
-  generatedAccessToken(user: Pick<User, 'id' | 'email'>) {
-    const { id, email } = user;
+  generatedAccessToken(user: Pick<User, 'email'>) {
+    const { email } = user;
 
     const JWT_SECRET_KEY = this.configService.getOrThrow(
       'JWT_SECRET_KEY',
     ) as string;
-    const accessToken = sign({ email }, JWT_SECRET_KEY, { subject: id });
+    const accessToken = sign({ email }, JWT_SECRET_KEY, {
+      subject: email,
+      expiresIn: '5m',
+    });
 
-    return { accessToken };
+    return accessToken;
   }
 }
